@@ -17,14 +17,7 @@ and can be written in ``Datalog notation'' as the following
 example shows.
 
 \begin{example} \label{ex:triangle} Consider the following SQL query:
-  \begin{lstlisting}[
-    language=SQL,
-    showspaces=false,
-    basicstyle=\ttfamily\small,
-    % numbers=left,
-    % numberstyle=\tiny,
-    commentstyle=\color{gray}
- ]
+  \begin{lstlisting}[language=SQL]
 -- Schema: R(x,y), S(y,z), T(z,x)
 SELECT R.x, S.y, T.z FROM R, S, T 
  WHERE R.y = S.y AND S.z = T.z AND T.x = R.x
@@ -91,7 +84,7 @@ matching tuple is further probed in $R_3$, etc.
 
 
 \begin{figure}
-  \begin{subfigure}[b]{0.25\linewidth}
+  \begin{subfigure}[b]{0.4\linewidth}
     \begin{lstlisting}
 for (x, y) in R:
   s = S[y]?
@@ -103,10 +96,10 @@ for (x, y) in R:
     \caption{Binary join.}
     \label{fig:background:binary-join}
   \end{subfigure}
-  \hspace{2cm}
-  \begin{subfigure}[b]{0.25\linewidth}
+  % \hspace{.5cm}
+  \begin{subfigure}[b]{0.45\linewidth}
     \centering
-    \begin{lstlisting}
+    \begin{lstlisting}[numbers=none]
 for a in R.x $\cap$ T.x:
   r = R[a]; t = T[a]
   for b in r.y $\cap$ S.y:
@@ -157,17 +150,22 @@ for a in R.x $\cap$ T.x:
 simplest worst-case optimal join algorithm.  It is based on the
 earlier Leapfrog Triejoin algorithm~\cite{DBLP:conf/icdt/Veldhuizen14}.
 %
-\GJ computes the query $Q$ in~\eqref{eq:cq} through a series of nested
-loops, where each loop iterates over a variable (not a tuple).
+\GJ computes a join query through a series of nested
+loops, where each loop iterates over a {\em variable} (not a tuple).
 Concretely, \GJ chooses arbitrarily a variable $x$, computes the
 intersection of all $x$-columns of all relations containing $x$, and
 for each value $a$ in this intersection it computes the residual query
 $Q[a/x]$, where every relation $R$ that contains $x$ is replaced with
-$\sigma_{x=a}(R)$.  In pseudocode:
+$\sigma_{x=a}(R)$.  In pseudocode (where $R_i.x$ is the $x$-column of
+relation $R_i$):
 %
-\begin{lstlisting}
-GJ: for a in $\bigcap \setof{\Pi_x(R_i)}{R_i \mbox{ contains } x}$
-      compute Q[a/x]  \\ run GJ on Q with one fewer variable
+\begin{lstlisting}[basicstyle=\ttfamily]
+def GJ(Q, tuple): # tuple is initially empty
+  if Q is empty: print(tuple)
+  else:
+    for a in $\bigcap_{i : x \in schema(R_i)} R_i.x$:
+      tuple.append(a)
+      GJ(Q[a/x]) # compute Q with one fewer variable
 \end{lstlisting}
 %
 If the query $Q$ has $k$ variables, then there are $k$ nested loops in

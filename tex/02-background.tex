@@ -2,34 +2,22 @@
 
 This section defines basic concepts and reviews background on binary
 join and \GJ.
+To keep the presentation high-level and intuitive,
+we review the concepts by example
+and refer the reader to the full paper~\cite{10.1145/3589295}
+for formal definitions.
 
 \subsection{Basic Concepts}\label{sec:basic-concepts}
 
-We consider a relational database where each relation has a fixed
-\emph{schema}, and may have duplicates, i.e. we use bag semantics.
-A \emph{full conjunctive query} has the following form:
-%
-\begin{align}
-  Q(\bm x) \cd & R_1(\bm x_1), \ldots, R_m(\bm x_m). \label{eq:cq}
-\end{align}
-%
-Each term $R_i(\bm x_i)$ is called an \emph{atom}, where $R_i$ is a
-relation name and $\bm x_i$ a tuple of variables.  The query is
-\emph{full}, meaning that the head variables $\bm x$ include all
-variables appearing in the atoms.  To reduce clutter in the following
-sections, we will assume that the query does not have self-joins.
-This is without loss of generality: if two atoms have the same
-relation name, then we simply rename one of them.  Our system also
-supports selections, projections, and aggregation.  We assume that the
-selections are pushed down to the base tables, thus the atom $R_i$
-in~\eqref{eq:cq} may include a selection over a base table; in
-particular, all variables in the atom $R_i(\bm x_i)$ are distinct.
-Similarly, projections and aggregates are performed after the full
-join, hence none of them is shown in~\eqref{eq:cq}.
-
+For simplicity we consider only {\em natural join} queries,
+where all joins are equijoins, and all input relations
+are joined over common attributes.
+Such queries are also known as {\em conjunctive queries}
+and can be written in ``Datalog notation'' as the following
+example shows.
 
 \begin{example} \label{ex:triangle} Consider the following SQL query:
-\begin{lstlisting}[
+  \begin{lstlisting}[
     language=SQL,
     showspaces=false,
     basicstyle=\ttfamily\small,
@@ -37,38 +25,42 @@ join, hence none of them is shown in~\eqref{eq:cq}.
     % numberstyle=\tiny,
     commentstyle=\color{gray}
  ]
-SELECT r.x, s.u, t.u
-  FROM R as r, M as s, M as t -- schema: R(x,y), M(u,v,w)
- WHERE s.w > 30 AND t.v = t.w
-   AND r.y = s.u AND s.v = t.u AND t.v = r.x
+-- Schema: R(x,y), S(y, z), T(z, x)
+SELECT R.x, S.y, T.z FROM R, S, T 
+ WHERE R.y = S.y AND S.z = T.z AND T.x = R.x
 \end{lstlisting}
-%
-Then we denote by $S = \Pi_{uv}(\sigma_{w>30}(M))$ and $T =
-\Pi_{uv}(\sigma_{v=w}(M))$, and write the query as:
-$$Q_{\triangle}(x,y,z) \cd R(x, y), S(y,z), T(z, x).$$
-%
-We call this query the \emph{triangle query} over the relations $R$, $S$,
-$T$.
+  %
+  The corresponding conjunctive query is:
+  $$Q_{\triangle}(x,y,z) \cd R(x, y), S(y,z), T(z, x).$$
+  %
+  where each of $R(x, y)$, $S(y,z)$, and $T(z, x)$
+  is called a {\em body atom}, and $Q_\triangle(x, y, z)$
+  the {\em head atom}.
 \end{example}
 
-It is often convenient to view the conjunctive query~\eqref{eq:cq} as
+It is often convenient to view a conjunctive query as
 a hypergraph.  The \emph{query hypergraph} of $Q$ consists of vertices
 $\mathcal{V}$ and edges $\mathcal{E}$, where the set of nodes
 $\mathcal{V}$ is the set of variables occurring in $Q$, and the set of
-hyperedges $\mathcal{E}$ is the set of atoms in $Q$.  The hyperedge
-associated to the atom $R(\bm x_i)$ is defined as the set consisting
-of the nodes associated to the variables $\bm x_i$.  As standard, we
+hyperedges $\mathcal{E}$ is the set of body atoms in $Q$.
+The hypergraph for $Q_\triangle$ is a triangle with three
+vertices $x, y$, and $z$ and three edges corresponding to
+$R(x, y)$, $S(y,z)$, and $T(z, x)$.
+For this reason we will refer to $Q_\triangle$ as the {\em triangle
+    query}.
+As standard, we
 say that the query $Q$ is {\em acyclic} if its associated hypergraph
-is $\alpha$-acyclic~\cite{DBLP:journals/jacm/Fagin83}
+is $\alpha$-acyclic\footnote{The reader does not need to be familiar
+  with definitions of acyclic queries to understand \FJ.}~\cite{DBLP:journals/jacm/Fagin83}.
 
 
 \subsection{Binary Join}\label{sec:binary-join}
 
-The standard approach to computing a conjunctive query~\eqref{eq:cq} is
+The standard approach to computing a natural join of multiple relations is
 to compute one binary join at a time.  A {\em binary plan} is a binary
 tree, where each internal node is a join operator $\Join$, and each
-leaf node is one of the base tables (atoms) $R_i(\bm x_i)$ in the
-query~\eqref{eq:cq}.  The plan is a \emph{left-deep linear plan}, or
+leaf node is one of the base tables $R_i$.
+The plan is a \emph{left-deep linear plan}, or
 simply left-deep plan, if the right child of every join is a leaf
 node.  If the plan is not left-deep, then we call it \emph{bushy}.
 For example, $(R \Join S) \Join (T \Join U)$ is a bushy plan, while
@@ -77,7 +69,7 @@ specially right-deep or zig-zag plans, but simply consider them to be
 bushy.
 
 In this paper we consider only hash-joins, which are the most
-common types of joins in database systems. 
+common types of joins in database systems.
 The standard way to execute a bushy plan is to
 decompose it into a series of left-deep linear plans.  Every join node
 that is a right child becomes the root of a new subplan, which is
@@ -100,7 +92,7 @@ matching tuple is further probed in $R_3$, etc.
 
 \begin{figure}
   \begin{subfigure}[b]{0.25\linewidth}
-\begin{lstlisting}
+    \begin{lstlisting}
 for (x, y) in R:
   s = S[y]?
   for (y, z) in s:
@@ -108,13 +100,13 @@ for (x, y) in R:
     for (x, z) in t:
       output(x, y, z)
 \end{lstlisting}
-\caption{Binary join.}
-\label{fig:background:binary-join}
+    \caption{Binary join.}
+    \label{fig:background:binary-join}
   \end{subfigure}
-\hspace{2cm}
+  \hspace{2cm}
   \begin{subfigure}[b]{0.25\linewidth}
     \centering
-\begin{lstlisting}
+    \begin{lstlisting}
 for a in R.x $\cap$ T.x:
   r = R[a]; t = T[a]
   for b in r.y $\cap$ S.y:
@@ -125,19 +117,19 @@ for a in R.x $\cap$ T.x:
     \caption{\GJ.}
     \label{fig:background:gj}
   \end{subfigure}
-%  \Description[TODO]{TODO}
+  %  \Description[TODO]{TODO}
   \caption{Execution of binary join and \GJ for $Q_\triangle$.  The
     notation \lstinline|S[y]?| performs a lookup on $S$ with the key
     $y$, and continues to the enclosing loop if the lookup fails.
     Binary join iterates over {\em tuples}, \GJ iterates over {\em
-      values}.}
+        values}.}
 \end{figure}
 
 \begin{example}
   A possible left-deep linear plan for $Q_\triangle$ is $[R, S, T]$,
   which represents $(R(x,y) \Join S(y,z)) \Join T(z,x)$.  To execute
   this plan, we first build a hash table for $S$ keyed on $y$, where
-  each $y$ maps to a vector of $(y,z)$ tuples, 
+  each $y$ maps to a vector of $(y,z)$ tuples,
   % \yell{Remy: this is not
   %   correct.  The hash table contains tuples.  Think of a table that
   %   has 30 attributes $S(x_1,\ldots, x_{30})$.  If you join on

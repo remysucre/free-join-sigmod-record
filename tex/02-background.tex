@@ -25,7 +25,7 @@ example shows.
     % numberstyle=\tiny,
     commentstyle=\color{gray}
  ]
--- Schema: R(x,y), S(y, z), T(z, x)
+-- Schema: R(x,y), S(y,z), T(z,x)
 SELECT R.x, S.y, T.z FROM R, S, T 
  WHERE R.y = S.y AND S.z = T.z AND T.x = R.x
 \end{lstlisting}

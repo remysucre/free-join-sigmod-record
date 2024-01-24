@@ -1,5 +1,6 @@
 % \documentclass[acmsmall,screen,review,anonymous]{acmart}
 \documentclass[format=sigconf, screen=true, review=false, nonacm]{acmart}
+% \documentclass{research4cacm}
 % \citestyle{acmauthoryear} 
 
 % \setcopyright{rightsretained} 
@@ -7,9 +8,9 @@
 % \acmYear{2023} \acmVolume{1} \acmNumber{2} \acmArticle{150} \acmMonth{6} \acmPrice{}\acmDOI{10.1145/3589295}
 
 %% \BibTeX command to typeset BibTeX logo in the docs \AtBeginDocument{%
-\AtBeginDocument{%
-\providecommand\BibTeX{{%
-Bib\TeX}}}
+% \AtBeginDocument{%
+% \providecommand\BibTeX{{%
+% Bib\TeX}}}
 
 % \makeatletter
 % \gdef\@copyrightpermission{
@@ -28,29 +29,29 @@ Bib\TeX}}}
 % \received[revised]{January 2023}
 % \received[accepted]{February 2023}	
 
-\author{Yisu Remy Wang}
-\affiliation{
-  \institution{University of California, Los Angeles}
-  \country{USA}
-}
-% \email{remywang@cs.ucla.edu}
-\authornote{Work done while at University of Washington.}
+% \author{Yisu Remy Wang}
+% \affiliation{
+%   \institution{University of California, Los Angeles}
+%   \country{USA}
+% }
+% % \email{remywang@cs.ucla.edu}
+% \authornote{Work done while at University of Washington.}
 
-\author{Max Willsey}
-\affiliation{
-  \institution{University of California, Berkeley}
-  \country{USA}
-}
-% \email{mwillsey@eecs.berkeley.edu}
-\authornotemark[1]
+% \author{Max Willsey}
+% \affiliation{
+%   \institution{University of California, Berkeley}
+%   \country{USA}
+% }
+% % \email{mwillsey@eecs.berkeley.edu}
+% \authornotemark[1]
 
 
-\author{Dan Suciu}
-\affiliation{
-  \institution{University of Washington}
-  \country{USA}
-}
-% \email{suciu@cs.washington.edu}
+% \author{Dan Suciu}
+% \affiliation{
+%   \institution{University of Washington}
+%   \country{USA}
+% }
+% % \email{suciu@cs.washington.edu}
 
 % \keywords{Worst-case optimal join}
 
@@ -66,9 +67,12 @@ Bib\TeX}}}
 
 \newcommand{\mv}[1]{\mathbf{#1}}
 
+\newtheorem{example}{Example}
+\newtheorem{definition}{Definition}
+
 \usepackage{tikz}
 \usepackage[inline]{enumitem}
-% \usepackage{amssymb}
+\usepackage{amsmath}
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage{subcaption}
 \usepackage{algorithm}
@@ -175,16 +179,16 @@ Bib\TeX}}}
 
 % \clearpage
 
-\begin{acks}
-  We thank Winston Bullen for his important contributions to
-  experimental infrastructures of this project.
-  This work is supported by
-  NSF-BSF 2109922, NSF IIS 1954222, and NSF IIS 1907997.
-\end{acks}
+% \begin{acks}
+%   We thank Winston Bullen for his important contributions to
+%   experimental infrastructures of this project.
+%   This work is supported by
+%   NSF-BSF 2109922, NSF IIS 1954222, and NSF IIS 1907997.
+% \end{acks}
 
 % \balance
 
-\bibliographystyle{ACM-Reference-Format}
+\bibliographystyle{abbrv} % standard abbrv style
 \bibliography{references}
 
 % \clearpage

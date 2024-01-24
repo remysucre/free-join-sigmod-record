@@ -2,45 +2,45 @@
 
 In this section we introduce the \FJ framework.
 We start by presenting the Generalized Hash Trie (\GHT) which
- is the data structure used in \FJ (Section~\ref{sec:ght}).
-Next we introduce the \FJ plan that specifies 
-  how to execute a query with \FJ (Section~\ref{sec:fj-plan}).
-Finally, we describe the \FJ algorithm, 
-  which takes as input a collection of \GHTs 
-  and a \FJ plan,
-  and computes the query according to the plan (Section~\ref{sec:free-join-algorithm}).
-  
-We will show how each of the above components generalizes 
-  and unifies the corresponding components in binary join 
-  and \GJ: 
-  the \GHT generalizes hash tables and hash tries,
-  the \FJ plan generalizes binary plans and \GJ plans, and
-  the \FJ algorithm generalizes binary join and \GJ.
+is the data structure used in \FJ (Section~\ref{sec:ght}).
+Next we introduce the \FJ plan that specifies
+how to execute a query with \FJ (Section~\ref{sec:fj-plan}).
+Finally, we describe the \FJ algorithm,
+which takes as input a collection of \GHTs
+and a \FJ plan,
+and computes the query according to the plan (Section~\ref{sec:free-join-algorithm}).
+
+We will show how each of the above components generalizes
+and unifies the corresponding components in binary join
+and \GJ:
+the \GHT generalizes hash tables and hash tries,
+the \FJ plan generalizes binary plans and \GJ plans, and
+the \FJ algorithm generalizes binary join and \GJ.
 
 \begin{figure}
-\begin{subfigure}[b]{0.4\linewidth}
-\begin{align*}
-  Q_{\clubsuit}(x,a,b,c) :- R(x,a),S(x,b),T(x,c)
-\end{align*}
-\begin{align*}
-  R & = \set{(x_0, a_0)} \cup \setof{(x_1, a_i^l), (x_2, a_i^r)}{i \in [1 \ldots n]} \\
-  S & = \set{(x_0, b_0)} \cup \setof{(x_2, b_i^l), (x_3, b_i^r)}{i \in [1 \ldots n]} \\
-  T & = \set{(x_0, c_0)} \cup \setof{(x_3, c_i^l), (x_1, c_i^r)}{i \in [1 \ldots n]} 
-  % R & = \set{(x_0, a_0)} \cup \bigcup_{i \in [1 \ldots n]} \set{(x_1, a_i^l), (x_2, a_i^r)} \\
-  % S & = \set{(x_0, b_0)} \cup \bigcup_{i \in [1 \ldots n]} \set{(x_2, b_i^l), (x_3, b_i^r)} \\
-  % T & = \set{(x_0, c_0)} \cup \bigcup_{i \in [1 \ldots n]} \set{(x_3, c_i^l), (x_1, c_i^r)} 
-\end{align*}
-\caption{$Q_\clubsuit$ and inputs.}
-\label{fig:clover-query}
-\end{subfigure}
-\begin{subfigure}[b]{0.5\linewidth}
-  \centering
-  \includegraphics[width=0.8\linewidth]{sand-dollar.pdf}
-  \caption{Visualization of the input relations.}
-  \label{fig:clover-vis}
-\end{subfigure}
-\caption{(\ref{fig:clover-query}) the clover query $Q_\clubsuit$, and an input instance.
-(\ref{fig:clover-vis}) visualization of the instance in
+  \begin{subfigure}[b]{0.4\linewidth}
+    \begin{align*}
+      Q_{\clubsuit}(x,a,b,c) :- R(x,a),S(x,b),T(x,c)
+    \end{align*}
+    \begin{align*}
+      R & = \set{(x_0, a_0)} \cup \setof{(x_1, a_i^l), (x_2, a_i^r)}{i \in [1 \ldots n]} \\
+      S & = \set{(x_0, b_0)} \cup \setof{(x_2, b_i^l), (x_3, b_i^r)}{i \in [1 \ldots n]} \\
+      T & = \set{(x_0, c_0)} \cup \setof{(x_3, c_i^l), (x_1, c_i^r)}{i \in [1 \ldots n]}
+      % R & = \set{(x_0, a_0)} \cup \bigcup_{i \in [1 \ldots n]} \set{(x_1, a_i^l), (x_2, a_i^r)} \\
+      % S & = \set{(x_0, b_0)} \cup \bigcup_{i \in [1 \ldots n]} \set{(x_2, b_i^l), (x_3, b_i^r)} \\
+      % T & = \set{(x_0, c_0)} \cup \bigcup_{i \in [1 \ldots n]} \set{(x_3, c_i^l), (x_1, c_i^r)} 
+    \end{align*}
+    \caption{$Q_\clubsuit$ and inputs.}
+    \label{fig:clover-query}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{sand-dollar.pdf}
+    \caption{Visualization of the input relations.}
+    \label{fig:clover-vis}
+  \end{subfigure}
+  \caption{(\ref{fig:clover-query}) the clover query $Q_\clubsuit$, and an input instance.
+    (\ref{fig:clover-vis}) visualization of the instance in
     Fig.~\ref{fig:clover-query}. The solid (top) edges form the relation
     \texttt{R}, the dashed (right) edges form the relation \texttt{S},
     and the dotted (left) edges form the relation \texttt{T}.  The
@@ -57,7 +57,7 @@ Note that $Q_\clubsuit$ is
 \subsection{The Generalized Hash Trie}\label{sec:ght}
 
 \begin{figure}
-\begin{lstlisting}
+  \begin{lstlisting}
 interface GHT {
   # fields
   relation: String, vars: Vec<String>  
@@ -67,15 +67,15 @@ interface GHT {
   fn iter() -> Iterator<Tuple>
   fn get(key: Tuple) -> Option<GHT> }
 \end{lstlisting}
-\caption{The \GHT interface.}
-\label{fig:ght}
+  \caption{The \GHT interface.}
+  \label{fig:ght}
 \end{figure}
 
-To unify binary join and \GJ, 
-  we first need to unify the data structures they work over.
-We propose the Generalized Hash Trie 
-  which generalizes both the hash table used in binary join 
-  and the hash trie used in \GJ.
+To unify binary join and \GJ,
+we first need to unify the data structures they work over.
+We propose the Generalized Hash Trie
+which generalizes both the hash table used in binary join
+and the hash trie used in \GJ.
 
 \begin{definition}[Generalized Hash Trie (\GHT)]
   A \GHT is a tree where each leaf is a vector of tuples, and
@@ -88,36 +88,36 @@ We will reuse the terminology defined for tries, including
 also use the terms \GHT and \emph{trie} interchangeably when the
 context is clear.  The {\em schema} of a \GHT is the list
 $[\bm y_0,\bm y_1, \ldots, \bm y_\ell]$ where $\bm y_k$ are the
-attribute names of the key at level $k$. 
+attribute names of the key at level $k$.
 
 The hash trie used in \GJ is a \GHT where each key is a tuple of size one,
-  and the last level stores empty vectors, each of which represents a leaf.
+and the last level stores empty vectors, each of which represents a leaf.
 The hash table used in binary join is very similar to a \GHT with only two levels,
-  where level 0 stores the keys and level 1 stores
-  vectors of tuples.
-A small difference is that, in the \GHT, the concatenation of 
-  a tuple from level 0 with a tuple from level 1 forms a tuple in the relation, 
-  whereas each whole tuple is stored directly in a hash table.
+where level 0 stores the keys and level 1 stores
+vectors of tuples.
+A small difference is that, in the \GHT, the concatenation of
+a tuple from level 0 with a tuple from level 1 forms a tuple in the relation,
+whereas each whole tuple is stored directly in a hash table.
 We will show in Section~\ref{sec:colt} how the \COLT data structure
-  more faithfully captures the structure of a hash table.
+more faithfully captures the structure of a hash table.
 Figure~\ref{fig:ght-examples} shows two examples of \GHTs.
 
 We use \GHTs to represent relations,
-  and attach metadata as well as access methods 
-  to each \GHT, to be used by the \FJ algorithm.
+and attach metadata as well as access methods
+to each \GHT, to be used by the \FJ algorithm.
 The \GHT interface is shown in Figure~\ref{fig:ght}.
 The \lstinline|relation| field stores the relation name.
 A sub-trie inherits its name from its parent.
 The \lstinline|vars| field stores parts of the relation's schema:
-  if the trie is a vector of tuples, 
-  \lstinline|vars| is the schema of each tuple;
-  if the trie is a map, 
-  \lstinline|vars| is the schema of each key.
-The constructor method \lstinline|new| creates a new \GHT from the named relation, 
-  where an $n$-th level trie has variables
-  matching the $n$-th element of the \lstinline|schema| argument,
-  and the values along each path from the root to a leaf of the \GHT 
-  form a tuple in the relation.
+if the trie is a vector of tuples,
+\lstinline|vars| is the schema of each tuple;
+if the trie is a map,
+\lstinline|vars| is the schema of each key.
+The constructor method \lstinline|new| creates a new \GHT from the named relation,
+where an $n$-th level trie has variables
+matching the $n$-th element of the \lstinline|schema| argument,
+and the values along each path from the root to a leaf of the \GHT
+form a tuple in the relation.
 
 \begin{example}
   Both \GHTs in Figure~\ref{fig:ght-examples} represent relation $S$ from the
@@ -135,30 +135,30 @@ The constructor method \lstinline|new| creates a new \GHT from the named relatio
   $b$ values in the hash table are simply stored in vectors.
 \end{example}
 
-The methods \lstinline|iter| and \lstinline|get| 
-  provide access to values stored in the trie.
-If the trie is a map, 
-  \lstinline|get(key)| returns the sub-trie mapped to \lstinline|key|,
-  if any.
+The methods \lstinline|iter| and \lstinline|get|
+provide access to values stored in the trie.
+If the trie is a map,
+\lstinline|get(key)| returns the sub-trie mapped to \lstinline|key|,
+if any.
 Calling \texttt{get} on a vector returns \lstinline|None|.
-If the trie is a vector, 
-  \lstinline|iter()|
-  returns an iterator over the tuples in the vector;
-  calling \texttt{iter} on a map 
-  returns an iterator over the keys.
+If the trie is a vector,
+\lstinline|iter()|
+returns an iterator over the tuples in the vector;
+calling \texttt{iter} on a map
+returns an iterator over the keys.
 
 \begin{figure}
   \centering
   \begin{subfigure}[c]{0.3\linewidth}
-  \includegraphics[width=\textwidth]{trie}
+    \includegraphics[width=\textwidth]{trie}
   \end{subfigure}\hspace{1.5cm}%
   \begin{subfigure}[c]{0.3\linewidth}
-  \includegraphics[width=\textwidth]{map}
-  \end{subfigure} 
+    \includegraphics[width=\textwidth]{map}
+  \end{subfigure}
   \caption{
-    Two \GHTs. The one on the left is also a hash trie, 
-      and the one on the right is similar to a hash table.
-    Each box with solid border stores hash keys, 
+    Two \GHTs. The one on the left is also a hash trie,
+    and the one on the right is similar to a hash table.
+    Each box with solid border stores hash keys,
     and each box with dashed border is a vector of tuples.
     An empty box is an empty vector, representing a leaf.
   }
@@ -167,12 +167,12 @@ If the trie is a vector,
 
 \begin{example}
   On the second \GHT in Figure~\ref{fig:ght-examples},
-    calling \texttt{iter} returns an 
-    iterator over the values $[x_0, x_2, x_3]$.
-    Calling \texttt{get} with the key $x_2$ 
-    returns the sub-trie which is the vector $[b_1^l, \ldots, b_n^l]$.
+  calling \texttt{iter} returns an
+  iterator over the values $[x_0, x_2, x_3]$.
+  Calling \texttt{get} with the key $x_2$
+  returns the sub-trie which is the vector $[b_1^l, \ldots, b_n^l]$.
   Calling \texttt{iter} on this sub-trie
-    returns an iterator over $[b_1^l, \ldots, b_n^l]$.
+  returns an iterator over $[b_1^l, \ldots, b_n^l]$.
 \end{example}
 
 
@@ -181,20 +181,20 @@ If the trie is a vector,
 % \ds{The section tile doesn't seem right.  What about ``The \FJ plan''}
 
 A \FJ plan specifies how the \FJ algorithm should be executed.
-It generalizes and unifies binary join plans and \GJ plans. 
+It generalizes and unifies binary join plans and \GJ plans.
 Recall that a left-deep linear plan for binary join
-  is a sequence of relations;
-  it need not specify the join attributes, 
-  since all shared attributes are joined.
+is a sequence of relations;
+it need not specify the join attributes,
+since all shared attributes are joined.
 In contrast, a \GJ plan is a sequence of variables;
-  it need not specify the relations, 
-  since all relations on each variable are joined.
+it need not specify the relations,
+since all relations on each variable are joined.
 A \FJ plan may join on any number of variables and relations at each step,
-  and therefore needs to specify both explicitly.
+and therefore needs to specify both explicitly.
 
-  To help define the \FJ plan, we introduce two new concepts, called
-  \emph{subatom} and \emph{partitioning}.  Fix the query $Q$ in
-  Eq.~\eqref{eq:cq}:
+To help define the \FJ plan, we introduce two new concepts, called
+\emph{subatom} and \emph{partitioning}.  Fix the query $Q$ in
+Eq.~\eqref{eq:cq}:
 
 \begin{definition}
   A \emph{subatom} of an atom $R_i(\bm x_i)$ is an expression
@@ -210,15 +210,15 @@ We now define the \FJ plan using these concepts.
   Fix a conjunctive query $Q$.  A \FJ \emph{plan} is a list
   $[\phi_1, \ldots, \phi_m]$, where each $\phi_k$ is a list of
   subatoms of $Q$, called a {\em node}.  The nodes are required to
-  {\em partition the query}, in the sense that, for every atom
+    {\em partition the query}, in the sense that, for every atom
   $R_i(\bm x_i)$ in the query, the set of all its subatoms occurring
   in all nodes must form a partitioning of $R_i(\bm x_i)$.  We denote
   by $vs(\phi_k)$ the set of variables in all subatoms of $\phi_k$.
   The variables \emph{available to} $\phi_k$ are all variables of the
   preceding nodes:
-%
-$$avs(\phi_k) = \bigcup_{j < k} vs(\phi_j)$$
-%
+  %
+  $$avs(\phi_k) = \bigcup_{j < k} vs(\phi_j)$$
+  %
 \end{definition}
 
 %%% Since the partitioning of each atom into subatoms can be inferred 
@@ -234,27 +234,27 @@ We will define shortly a {\em valid plan}, but first we show an example.
 
 \begin{example}\label{ex:fj-plan}
   The following is an \FJ plan for $Q_\clubsuit$:
-\begin{align}
-&  [[R(x, a), S(x)], [S(b), T(x)], [T(c)]]\label{eq:bj-plan}
-\end{align}
-%
-To execute the first node we iterate over each tuple $(x, a)$ in $R$
-and use $x$ to probe into $S$; for each successful probe we execute
-the second node: we iterate over each $b$ in $S[x]$, then use
-$x$ to probe into $T$; finally the third node iterates over $c$ in
-$T[x]$.  The reader may notice that this corresponds precisely to the
-left-deep plan $(R(x,a) \Join S(x,b))\Join T(x,c)$.
-%
-Another \FJ plan for $Q_\clubsuit$ is: 
-%
-\begin{align}
-  [[R(x), S(x), T(x)], [R(a)], [S(b)], [T(c)]]\label{eq:gj-plan}
-\end{align}
-%
-This plan corresponds to the \GJ plan $[x,a,b,c]$.  Intuitively, here
-we start by intersecting $R.x \cap S.x \cap T.x$, then, for each $x$
-in the intersection, we retrieve the values of $a$, $b$, and $c$ from
-$R$, $S$, and $T$, and output their Cartesian product.
+  \begin{align}
+     & [[R(x, a), S(x)], [S(b), T(x)], [T(c)]]\label{eq:bj-plan}
+  \end{align}
+  %
+  To execute the first node we iterate over each tuple $(x, a)$ in $R$
+  and use $x$ to probe into $S$; for each successful probe we execute
+  the second node: we iterate over each $b$ in $S[x]$, then use
+  $x$ to probe into $T$; finally the third node iterates over $c$ in
+  $T[x]$.  The reader may notice that this corresponds precisely to the
+  left-deep plan $(R(x,a) \Join S(x,b))\Join T(x,c)$.
+  %
+  Another \FJ plan for $Q_\clubsuit$ is:
+  %
+  \begin{align}
+    [[R(x), S(x), T(x)], [R(a)], [S(b)], [T(c)]]\label{eq:gj-plan}
+  \end{align}
+  %
+  This plan corresponds to the \GJ plan $[x,a,b,c]$.  Intuitively, here
+  we start by intersecting $R.x \cap S.x \cap T.x$, then, for each $x$
+  in the intersection, we retrieve the values of $a$, $b$, and $c$ from
+  $R$, $S$, and $T$, and output their Cartesian product.
 \end{example}
 
 % \begin{figure}
@@ -319,7 +319,7 @@ Sec.~\ref{sec:optimization}, and allow for multiple covers.
   covers for the 4 nodes are $R(x), R(a), S(b), T(c)$; for the first
   node we could have also chosen $S(x)$ or $T(x)$ as cover.
 \end{example}
- 
+
 % \ds{A few issues in the paragraph above and earlier.  You need to
 %   define an atom, since this seems to be nonstandard: I assume you
 %   mean that an atom consists of a relation name and a subset of the
@@ -339,9 +339,9 @@ Sec.~\ref{sec:optimization}, and allow for multiple covers.
 \begin{example}
   An example of an \emph{invalid} plan for the clover query has one
   single node containing all relations and variables:
-%
+  %
   $$[[R(x, a), S(x, b), T(x, c)]]$$
-%
+  %
   Intuitively, we cannot execute it: if we iterate over, say $R$, then
   we bind two variables $x$ and $a$, but to lookup $S$ we
   need the key $(x,b)$.
@@ -451,13 +451,13 @@ computing the schema for each relation, we call the constructor method
 
 \subsubsection*{Join Phase}
 The pseudo-code for the \FJ algorithm is shown in Figure~\ref{fig:fj-algo}.
-The \lstinline|join| method takes as input the \GHTs, the \FJ plan, 
-  and the current tuple initialized to be empty.
+The \lstinline|join| method takes as input the \GHTs, the \FJ plan,
+and the current tuple initialized to be empty.
 If the plan is empty, we output the tuple (line~\ref{lst:output}).
 Otherwise, we work on the first node in the plan
-  and intersect relevant tries (line~\ref{lst:select}).
-We iterate over tuples in the covering relation, 
-  which is the first trie in the node (line~\ref{lst:outer}).
+and intersect relevant tries (line~\ref{lst:select}).
+We iterate over tuples in the covering relation,
+which is the first trie in the node (line~\ref{lst:outer}).
 %
 % First we pick the trie to iterate over (line~\ref{lst:iter}).
 % If any trie is a vector, we iterate over it.
@@ -479,30 +479,30 @@ We iterate over tuples in the covering relation,
 %
 % In the outer for loop (line~\ref{lst:outer})
 %   we iterate over each tuple \lstinline|t| in the trie we have picked.
-Then, we use values from \lstinline|t| 
-  and the \lstinline|tuple| argument
-  as keys to probe into the other tries 
-  (line~\ref{lst:inner}-\ref{lst:inner-end}).
-To construct a key for a certain trie, 
-  we find the values mapped from the trie's schema variables
-  in \lstinline|t| and \lstinline|tuple| (line~\ref{lst:key}).
+Then, we use values from \lstinline|t|
+and the \lstinline|tuple| argument
+as keys to probe into the other tries
+(line~\ref{lst:inner}-\ref{lst:inner-end}).
+To construct a key for a certain trie,
+we find the values mapped from the trie's schema variables
+in \lstinline|t| and \lstinline|tuple| (line~\ref{lst:key}).
 If any probe fails, we continue to the next tuple in the outer loop.
-If all probes succeed, we replace the original tries with the 
-  subtries returned by the probes,
-  and recursively call \lstinline|join| 
-  on the new tries and the rest of the plan (line~\ref{lst:tuple}-\ref{lst:join}).
+If all probes succeed, we replace the original tries with the
+subtries returned by the probes,
+and recursively call \lstinline|join|
+on the new tries and the rest of the plan (line~\ref{lst:tuple}-\ref{lst:join}).
 
 The recursive definition may obscure the essence of the \FJ algorithm,
-  so we provide some examples where we unroll the recursion.
+so we provide some examples where we unroll the recursion.
 We introduce some convenient syntax to simplify the presentation.
-We write \lstinline|for (x,y,...) in T:| 
-  to introduce a for-loop iterating over \lstinline|T|, 
-  binding the values of each tuple in \lstinline|T.iter()| 
-  to the variables \lstinline|x,y,...|.
-We write \lstinline|r = R[t]?| to bind the result of 
-  \lstinline|R.get(t)| to \lstinline|r|;
-  if the lookup fails, we continue to the next iteration of the 
-  enclosing loop.
+We write \lstinline|for (x,y,...) in T:|
+to introduce a for-loop iterating over \lstinline|T|,
+binding the values of each tuple in \lstinline|T.iter()|
+to the variables \lstinline|x,y,...|.
+We write \lstinline|r = R[t]?| to bind the result of
+\lstinline|R.get(t)| to \lstinline|r|;
+if the lookup fails, we continue to the next iteration of the
+enclosing loop.
 In other words, \texttt{r = R[t]?} is equivalent to:
 %
 \begin{lstlisting}
@@ -511,7 +511,7 @@ r = R.get(t); if r.is_none(): continue
 
 \begin{figure*}
   \begin{subfigure}[b]{0.3\linewidth}
-\begin{lstlisting}[escapeinside={(*}{*)}]
+    \begin{lstlisting}[escapeinside={(*}{*)}]
 R = GHT("R",[["x","a"]])
 S = GHT("S",[["x"],["b"]])
 T = GHT("T",[["x"],["c"]])
@@ -525,10 +525,10 @@ for (x, a) in R:
     \caption{Binary \FJ.}
     \label{fig:bj-loop}
   \end{subfigure}
-\hspace{1.5em}
+  \hspace{1.5em}
   \begin{subfigure}[b]{0.3\linewidth}
     \centering
-\begin{lstlisting}[
+    \begin{lstlisting}[
     escapeinside={(*}{*)}
 ]
 # same as the left
@@ -547,7 +547,7 @@ for (x, a) in R:
   \hspace{.5em}
   \begin{subfigure}[b]{0.3\linewidth}
     \centering
-\begin{lstlisting}
+    \begin{lstlisting}
 R = GHT("R",[["x"],["a"]])
 # same as the left
 # ...
@@ -561,7 +561,6 @@ for x in R:
     \caption{Generic \FJ.}
     \label{fig:gj-loop}
   \end{subfigure}
-  \Description[TODO]{TODO}
   \caption{Execution of \FJ for the clover query.}
 \end{figure*}
 
@@ -569,13 +568,13 @@ for x in R:
   Consider the plan in Eq.~\eqref{eq:bj-plan} for the clover query $Q_\clubsuit$.
   Figure~\ref{fig:bj-loop} shows its execution; ignore the underlined
   instruction for now.
-%%%   Here we have omitted all ``setup'' code, 
-%%%     showing only the nested loops performing iteration and lookup.
-  In the build phase, 
-    we construct a flat vector for $R$ and a hash table for each of $S$ and $T$.
-  In the join phase, for the  node $[R(x, a), S(x)]$  we 
-   iterate over $R$ and probe into $S$, while for the second node $[S(b), T(x)]$,
-    we iterate over the second level of $S$ and probe into $T$.
+  %%%   Here we have omitted all ``setup'' code, 
+  %%%     showing only the nested loops performing iteration and lookup.
+  In the build phase,
+  we construct a flat vector for $R$ and a hash table for each of $S$ and $T$.
+  In the join phase, for the  node $[R(x, a), S(x)]$  we
+  iterate over $R$ and probe into $S$, while for the second node $[S(b), T(x)]$,
+  we iterate over the second level of $S$ and probe into $T$.
   Finally, the third loop iterates over the second level of $T$ and outputs the result.
 \end{example}
 
@@ -583,19 +582,19 @@ for x in R:
   Consider now the plan in Eq.~\eqref{eq:gj-plan} for  $Q_\clubsuit$.
   Its execution is shown in Figure~\ref{fig:gj-loop}.
   We construct  hash tables for $R$, $S$, and $T$, keyed on $x$.
-  The first loop level intersects the three relations on $x$, 
-    and subsequent loop levels take the Cartesian product of the relations on $a$, $b$, and $c$.
+  The first loop level intersects the three relations on $x$,
+  and subsequent loop levels take the Cartesian product of the relations on $a$, $b$, and $c$.
 \end{example}
 
 Note that Fig.~\ref{fig:bj-loop}
-  follows the execution of binary hash join with the plan $[R, S, T]$,
-  whereas Fig.~\ref{fig:gj-loop} follows the execution of \GJ
-   with the plan $[x, a, b, c]$.  We will describe
-   Fig.~\ref{fig:factorized-loop} later.
+follows the execution of binary hash join with the plan $[R, S, T]$,
+whereas Fig.~\ref{fig:gj-loop} follows the execution of \GJ
+with the plan $[x, a, b, c]$.  We will describe
+Fig.~\ref{fig:factorized-loop} later.
 
 \subsection{Discussion}
 
-\FJ plans generalize both traditional binary plans and \GJ.  
+\FJ plans generalize both traditional binary plans and \GJ.
 % We will describe in the next section a simple optimization that allows us to
 % cover the full spectrum in Fig.~\ref{fig:design-space}.  
 One

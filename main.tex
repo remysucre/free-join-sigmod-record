@@ -1,10 +1,10 @@
 % \documentclass[acmsmall,screen,review,anonymous]{acmart}
-\documentclass[format=acmsmall, screen=true, review=false]{acmart}
+\documentclass[format=sigconf, screen=true, review=false]{acmart}
 % \citestyle{acmauthoryear} 
 
-\setcopyright{rightsretained} 
-\acmJournal{PACMMOD}
-\acmYear{2023} \acmVolume{1} \acmNumber{2} \acmArticle{150} \acmMonth{6} \acmPrice{}\acmDOI{10.1145/3589295}
+% \setcopyright{rightsretained} 
+% \acmJournal{PACMMOD}
+% \acmYear{2023} \acmVolume{1} \acmNumber{2} \acmArticle{150} \acmMonth{6} \acmPrice{}\acmDOI{10.1145/3589295}
 
 %% \BibTeX command to typeset BibTeX logo in the docs \AtBeginDocument{%
 \AtBeginDocument{%
@@ -30,17 +30,19 @@ Bib\TeX}}}
 
 \author{Yisu Remy Wang}
 \affiliation{
-  \institution{University of Washington}
+  \institution{University of California, Los Angeles}
   \country{USA}
 }
-\email{remywang@cs.washington.edu}
+% \email{remywang@cs.ucla.edu}
+\authornote{Work done while at University of Washington.}
 
 \author{Max Willsey}
 \affiliation{
-  \institution{University of Washington}
+  \institution{University of California, Berkeley}
   \country{USA}
 }
-\email{mwillsey@cs.washington.edu}
+% \email{mwillsey@eecs.berkeley.edu}
+\authornotemark[1]
 
 
 \author{Dan Suciu}
@@ -48,7 +50,7 @@ Bib\TeX}}}
   \institution{University of Washington}
   \country{USA}
 }
-\email{suciu@cs.washington.edu}
+% \email{suciu@cs.washington.edu}
 
 \keywords{Worst-case optimal join}
 
@@ -157,7 +159,7 @@ Bib\TeX}}}
   </concept>
   </ccs2012>
 \end{CCSXML}
-  
+
 \ccsdesc[500]{Information systems~Join algorithms}
 
 \maketitle
@@ -174,9 +176,9 @@ Bib\TeX}}}
 % \clearpage
 
 \begin{acks}
-We thank Winston Bullen for his important contributions to 
- experimental infrastructures of this project.
-This work is supported by 
+  We thank Winston Bullen for his important contributions to
+  experimental infrastructures of this project.
+  This work is supported by
   NSF-BSF 2109922, NSF IIS 1954222, and NSF IIS 1907997.
 \end{acks}
 

@@ -5,12 +5,26 @@ can be asymptotically faster than traditional binary joins, all the
 while remaining simple to understand and implement.  However, they
 have been found to be less efficient than the old paradigm,
 traditional binary join plans, on the typical acyclic queries found in
-practice.  Some database systems that support \WCOJ use a hybrid
-approach: use \WCOJ to process the cyclic subparts of the query (if
-any), and rely on traditional binary joins otherwise.  In this paper
-we propose a new framework, called \FJ, that unifies the two
-paradigms.  We describe a new type of plan, a new data structure
-(which unifies the hash tables and tries used by the two paradigms),
-and a suite of optimization techniques.  Our system, implemented in
-Rust, matches or outperforms both traditional binary joins and \WCOJ on
-standard query benchmarks.
+practice.
+In an effort to unify and generalize the two paradigms,
+we proposed a new framework, called \FJ, in our SIGMOD 2023 paper.
+Not only does \FJ unite the worlds of traditional and worst-case optimal
+join algorithms, it uncovers optimizations and evaluation strategies
+that outperform both.
+
+In this article, we approach \FJ from the traditional perspective
+of binary joins, and re-derive the more general framework
+via a series of gradual transformations.
+We hope this perspective from the past can help practitioners
+better understand the \FJ framework,
+and find ways to incorporate some ideas into their own systems.
+
+% Some database systems that support \WCOJ use a hybrid
+% approach: use \WCOJ to process the cyclic subparts of the query (if
+% any), and rely on traditional binary joins otherwise.  In this paper
+% we propose a new framework, called \FJ, that unifies the two
+% paradigms.  We describe a new type of plan, a new data structure
+% (which unifies the hash tables and tries used by the two paradigms),
+% and a suite of optimization techniques.  Our system, implemented in
+% Rust, matches or outperforms both traditional binary joins and \WCOJ on
+% standard query benchmarks.

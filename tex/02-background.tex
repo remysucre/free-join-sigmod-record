@@ -156,16 +156,14 @@ Concretely, \GJ chooses arbitrarily a variable $x$, computes the
 intersection of all $x$-columns of all relations containing $x$, and
 for each value $a$ in this intersection it computes the residual query
 $Q[a/x]$, where every relation $R$ that contains $x$ is replaced with
-$\sigma_{x=a}(R)$.  In pseudocode (where $R_i.x$ is the $x$-column of
-relation $R_i$):
+$\sigma_{x=a}(R)$.  In pseudocode (where $\Pi_x (R_i)$ is the $x$-column of $R_i$):
 %
 \begin{lstlisting}[basicstyle=\ttfamily]
-def GJ(Q, tuple): # tuple is initially empty
+def join(Q, tuple): # tuple is initially empty
   if Q is empty: print(tuple)
   else:
-    for a in $\bigcap_{i : x \in schema(R_i)} R_i.x$:
-      tuple.append(a)
-      GJ(Q[a/x]) # compute Q with one fewer variable
+    for a in $\bigcap_{i : x \in schema(R_i)} \Pi_x(R_i)$:
+      join(Q[a/x], tuple ++ [a])
 \end{lstlisting}
 %
 If the query $Q$ has $k$ variables, then there are $k$ nested loops in
@@ -178,7 +176,7 @@ done optimally (see below), the algorithm is provably
 worst-case-optimal, for any choice of the variable order.
 
 \begin{example}
-  Fig.~\ref{fig:background:gj} illustrates the pseudocode for \GJ on the
+  Fig.~\ref{fig:background:gj} shows the execution of \GJ on the
   query $Q_\triangle$, using the variable order $[x,y,z]$.  We denoted
   $\Pi_x(R)$ by $R.x$, and denoted (with some abuse) $\sigma_{x=a}(R)$
   by $R[a]$.

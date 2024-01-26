@@ -33,6 +33,8 @@ defining the algorithm in full generality.
 We refer the reader to our SIGMOD paper~\cite{10.1145/3589295}
 for a more formal treatment.
 
+\subsection{Basic Concepts and Notations}\label{sec:basic-concepts}
+
 For simplicity we consider only {\em natural join} queries,
 where all joins are equijoins, and all input relations
 are joined over common attributes.
@@ -64,6 +66,38 @@ Note that $Q_\clubsuit$ is acyclic,
 while an example of a {\em cyclic} query is the ``triangle query'':
 $$Q_\triangle(x, y, z) \cd U(x, y), V(y, z), W(z, x).$$
 whose query hypergraph is a triangle.
+
+We now introduce a notation to make pseudocode cleaner.
+Inside a loop,
+we will write \lstinline|m = M[x]?|
+for looking up $x$ from the hash map $M$;
+if $M$ contains $x$, we assign the result of the lookup
+to $m$; otherwise, we \lstinline|continue| to the next iteration
+of the enclosing loop.
+In other words, the code fragments in Figure~\ref{fig:lookup-notation}
+are equivalent.
+\begin{figure}
+  \begin{subfigure}[t]{0.5\linewidth}
+    \begin{lstlisting}
+for ...:
+  m = M[x]?
+  ...
+\end{lstlisting}
+  \end{subfigure}
+  \begin{subfigure}[t]{.45\linewidth}
+    \begin{lstlisting}
+for ...:
+  if x not in M: 
+    continue
+  else: 
+    m = M[x]
+    ...
+\end{lstlisting}
+  \end{subfigure}
+  \caption{Example using the notation \lstinline|m = M[x]?|.
+    The two code fragments are equivalent.}
+  \label{fig:lookup-notation}
+\end{figure}
 
 % \subsection{Basic Concepts}\label{sec:basic-concepts}
 

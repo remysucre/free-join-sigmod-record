@@ -1,58 +1,23 @@
-\section{\FJ}\label{sec:free-join}
+\section{From binary join to \FJ}\label{sec:free-join}
 
-In this section we introduce the \FJ framework.
-We start by presenting the Generalized Hash Trie (\GHT) which
-is the data structure used in \FJ (Section~\ref{sec:ght}).
-Next we introduce the \FJ plan that specifies
-how to execute a query with \FJ (Section~\ref{sec:fj-plan}).
-Finally, we describe the \FJ algorithm,
-which takes as input a collection of \GHTs
-and a \FJ plan,
-and computes the query according to the plan (Section~\ref{sec:free-join-algorithm}).
+\subsection{Binary Join}
 
-We will show how each of the above components generalizes
-and unifies the corresponding components in binary join
-and \GJ:
-the \GHT generalizes hash tables and hash tries,
-the \FJ plan generalizes binary plans and \GJ plans, and
-the \FJ algorithm generalizes binary join and \GJ.
+% We start by presenting the Generalized Hash Trie (\GHT) which
+% is the data structure used in \FJ (Section~\ref{sec:ght}).
+% Next we introduce the \FJ plan that specifies
+% how to execute a query with \FJ (Section~\ref{sec:fj-plan}).
+% Finally, we describe the \FJ algorithm,
+% which takes as input a collection of \GHTs
+% and a \FJ plan,
+% and computes the query according to the plan (Section~\ref{sec:free-join-algorithm}).
 
-\begin{figure}
-  \begin{subfigure}[b]{0.4\linewidth}
-    \begin{align*}
-      Q_{\clubsuit}(x,a,b,c) :- R(x,a),S(x,b),T(x,c)
-    \end{align*}
-    \begin{align*}
-      R & = \set{(x_0, a_0)} \cup \setof{(x_1, a_i^l), (x_2, a_i^r)}{i \in [1 \ldots n]} \\
-      S & = \set{(x_0, b_0)} \cup \setof{(x_2, b_i^l), (x_3, b_i^r)}{i \in [1 \ldots n]} \\
-      T & = \set{(x_0, c_0)} \cup \setof{(x_3, c_i^l), (x_1, c_i^r)}{i \in [1 \ldots n]}
-      % R & = \set{(x_0, a_0)} \cup \bigcup_{i \in [1 \ldots n]} \set{(x_1, a_i^l), (x_2, a_i^r)} \\
-      % S & = \set{(x_0, b_0)} \cup \bigcup_{i \in [1 \ldots n]} \set{(x_2, b_i^l), (x_3, b_i^r)} \\
-      % T & = \set{(x_0, c_0)} \cup \bigcup_{i \in [1 \ldots n]} \set{(x_3, c_i^l), (x_1, c_i^r)} 
-    \end{align*}
-    \caption{$Q_\clubsuit$ and inputs.}
-    \label{fig:clover-query}
-  \end{subfigure}
-  \begin{subfigure}[b]{0.5\linewidth}
-    \centering
-    \includegraphics[width=0.8\linewidth]{sand-dollar.pdf}
-    \caption{Visualization of the input relations.}
-    \label{fig:clover-vis}
-  \end{subfigure}
-  \caption{(\ref{fig:clover-query}) the clover query $Q_\clubsuit$, and an input instance.
-    (\ref{fig:clover-vis}) visualization of the instance in
-    Fig.~\ref{fig:clover-query}. The solid (top) edges form the relation
-    \texttt{R}, the dashed (right) edges form the relation \texttt{S},
-    and the dotted (left) edges form the relation \texttt{T}.  The
-    relations join on the attribute in the center.  The only output
-    tuple consists of the three edges in the center. }
-\end{figure}
+% We will show how each of the above components generalizes
+% and unifies the corresponding components in binary join
+% and \GJ:
+% the \GHT generalizes hash tables and hash tries,
+% the \FJ plan generalizes binary plans and \GJ plans, and
+% the \FJ algorithm generalizes binary join and \GJ.
 
-Throughout this section we will make use of the {\em clover query}
-$Q_\clubsuit$ in Figure~\ref{fig:clover-query}.
-Figure~\ref{fig:clover-vis} visualizes the input relations for this query.
-Note that $Q_\clubsuit$ is
-\emph{acyclic}.
 
 \subsection{The Generalized Hash Trie}\label{sec:ght}
 
@@ -509,60 +474,60 @@ In other words, \texttt{r = R[t]?} is equivalent to:
 r = R.get(t); if r.is_none(): continue
 \end{lstlisting}
 
-\begin{figure*}
-  \begin{subfigure}[b]{0.3\linewidth}
-    \begin{lstlisting}[escapeinside={(*}{*)}]
-R = GHT("R",[["x","a"]])
-S = GHT("S",[["x"],["b"]])
-T = GHT("T",[["x"],["c"]])
-for (x, a) in R:
-  s = S[x]?
-  for b in s:
-   (* \underline{t = T[x]?} *)
-    for c in t:
-      output(x, a, b, c)
-\end{lstlisting}
-    \caption{Binary \FJ.}
-    \label{fig:bj-loop}
-  \end{subfigure}
-  \hspace{1.5em}
-  \begin{subfigure}[b]{0.3\linewidth}
-    \centering
-    \begin{lstlisting}[
-    escapeinside={(*}{*)}
-]
-# same as the left
-# ...
-# ...
-for (x, a) in R:
-  s = S[x]?
- (* \underline{t = T[x]?} *)
-  for b in s:
-    for c in t:
-      output(x, a, b, c)
-\end{lstlisting}
-    \caption{Factorized \FJ.}
-    \label{fig:factorized-loop}
-  \end{subfigure}
-  \hspace{.5em}
-  \begin{subfigure}[b]{0.3\linewidth}
-    \centering
-    \begin{lstlisting}
-R = GHT("R",[["x"],["a"]])
-# same as the left
-# ...
-for x in R:
-  r=R[x]?; s=S[x]?; t=T[x]?
-  for a in r:
-    for b in s:
-      for c in t:
-        output(x, a, b, c)
-\end{lstlisting}
-    \caption{Generic \FJ.}
-    \label{fig:gj-loop}
-  \end{subfigure}
-  \caption{Execution of \FJ for the clover query.}
-\end{figure*}
+% \begin{figure*}
+%   \begin{subfigure}[b]{0.3\linewidth}
+%     \begin{lstlisting}[escapeinside={(*}{*)}]
+% R = GHT("R",[["x","a"]])
+% S = GHT("S",[["x"],["b"]])
+% T = GHT("T",[["x"],["c"]])
+% for (x, a) in R:
+%   s = S[x]?
+%   for b in s:
+%    (* \underline{t = T[x]?} *)
+%     for c in t:
+%       output(x, a, b, c)
+% \end{lstlisting}
+%     \caption{Binary \FJ.}
+%     \label{fig:bj-loop}
+%   \end{subfigure}
+%   \hspace{1.5em}
+%   \begin{subfigure}[b]{0.3\linewidth}
+%     \centering
+%     \begin{lstlisting}[
+%     escapeinside={(*}{*)}
+% ]
+% # same as the left
+% # ...
+% # ...
+% for (x, a) in R:
+%   s = S[x]?
+%  (* \underline{t = T[x]?} *)
+%   for b in s:
+%     for c in t:
+%       output(x, a, b, c)
+% \end{lstlisting}
+%     \caption{Factorized \FJ.}
+%     \label{fig:factorized-loop}
+%   \end{subfigure}
+%   \hspace{.5em}
+%   \begin{subfigure}[b]{0.3\linewidth}
+%     \centering
+%     \begin{lstlisting}
+% R = GHT("R",[["x"],["a"]])
+% # same as the left
+% # ...
+% for x in R:
+%   r=R[x]?; s=S[x]?; t=T[x]?
+%   for a in r:
+%     for b in s:
+%       for c in t:
+%         output(x, a, b, c)
+% \end{lstlisting}
+%     \caption{Generic \FJ.}
+%     \label{fig:gj-loop}
+%   \end{subfigure}
+%   \caption{Execution of \FJ for the clover query.}
+% \end{figure*}
 
 \begin{example}\label{ex:binary-free-join}
   Consider the plan in Eq.~\eqref{eq:bj-plan} for the clover query $Q_\clubsuit$.

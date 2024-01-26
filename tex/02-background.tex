@@ -1,13 +1,37 @@
-\section{Background}\label{sec:background}
+\section{From Binary Join to Free Join}\label{sec:background}
 
-This section defines basic concepts and reviews background on binary
-join and \GJ.
-To keep the presentation high-level and intuitive,
-we review the concepts by example
-and refer the reader to the full paper~\cite{10.1145/3589295}
-for formal definitions.
+\begin{figure}
+  \begin{align*}
+    Q_{\clubsuit}(x,a,b,c) \cd R(x,a),S(x,b),T(x,c).
+  \end{align*}
+  \begin{center}
+    \begin{tabular}{c}
+      \begin{lstlisting}[language=SQL, numbers=none]
+SELECT * FROM R, S, T WHERE R.x = S.x AND S.x = T.x
+\end{lstlisting}
+    \end{tabular}
+  \end{center}
+  \begin{alignat*}{8}
+    R & = & \set{(x_0, a_0)} & \cup & \{(x_1, a_i^l), & (x_2, a_i^r) &  & \mid i \in [1 \ldots n] & \} \\
+    S & = & \set{(x_0, b_0)} & \cup & \{(x_2, b_i^l), & (x_3, b_i^r) &  & \mid i \in [1 \ldots n] & \} \\
+    T & = & \set{(x_0, c_0)} & \cup & \{(x_3, c_i^l), & (x_1, c_i^r) &  & \mid i \in [1 \ldots n] & \}
+  \end{alignat*}
+  \caption{The clover query $Q_\clubsuit$, and an input instance.
+    Note that $x_0$ is the only $x$-value in all three relations,
+    therefore the only output tuple is $(x_0, a_0, b_0, c_0)$. }
+  \label{fig:clover-query}
+\end{figure}
 
-\subsection{Basic Concepts}\label{sec:basic-concepts}
+In this section we introduce the \FJ framework.
+Unlike our SIGMOD paper~\cite{10.1145/3589295} which defines \FJ from
+the basic building blocks,
+here we start from the traditional binary join
+and gently massage it into the more general \FJ.
+To keep the presentation intuitive,
+we will be following an example instead of
+defining the algorithm in full generality.
+We refer the reader to our SIGMOD paper~\cite{10.1145/3589295}
+for a more formal treatment.
 
 For simplicity we consider only {\em natural join} queries,
 where all joins are equijoins, and all input relations
@@ -16,18 +40,11 @@ Such queries are also known as {\em conjunctive queries}
 and can be written in ``Datalog notation'' as the following
 example shows.
 
-\begin{example} \label{ex:triangle} Consider the following SQL query:
-  \begin{lstlisting}[language=SQL]
--- Schema: R(x,y), S(y,z), T(z,x)
-SELECT R.x, S.y, T.z FROM R, S, T 
- WHERE R.y = S.y AND S.z = T.z AND T.x = R.x
-\end{lstlisting}
-  %
-  The corresponding conjunctive query is:
-  $$Q_{\triangle}(x,y,z) \cd R(x, y), S(y,z), T(z, x).$$
-  %
-  where each of $R(x, y)$, $S(y,z)$, and $T(z, x)$
-  is called a {\em body atom}, and $Q_\triangle(x, y, z)$
+\begin{example} \label{ex:triangle}
+  Consider SQL query in Figure~\ref{fig:clover-query}.
+  The corresponding conjunctive query appears above it,
+  where each of $R(x, a)$, $S(x, b)$, and $T(x, c)$
+  is called a {\em body atom}, and $Q_\clubsuit(x, a, b, c)$
   the {\em head atom}.
 \end{example}
 
@@ -36,18 +53,140 @@ a hypergraph.  The \emph{query hypergraph} of $Q$ consists of vertices
 $\mathcal{V}$ and edges $\mathcal{E}$, where the set of nodes
 $\mathcal{V}$ is the set of variables occurring in $Q$, and the set of
 hyperedges $\mathcal{E}$ is the set of body atoms in $Q$.
-The hypergraph for $Q_\triangle$ is a triangle with three
-vertices $x, y$, and $z$ and three edges corresponding to
-$R(x, y)$, $S(y,z)$, and $T(z, x)$.
-For this reason we will refer to $Q_\triangle$ as the {\em triangle
-    query}.
+The hypergraph for $Q_\clubsuit$ has four vertices, each for
+$x$, $a$, $b$, and $c$,
+and three edges, each for $R(x, a)$, $S(x, b)$, and $T(x, c)$.
 As standard, we
 say that the query $Q$ is {\em acyclic} if its associated hypergraph
 is $\alpha$-acyclic\footnote{The reader does not need to be familiar
   with definitions of acyclic queries to understand \FJ.}~\cite{DBLP:journals/jacm/Fagin83}.
+Note that $Q_\clubsuit$ is acyclic,
+while an example of a {\em cyclic} query is the ``triangle query'':
+$$Q_\triangle(x, y, z) \cd U(x, y), V(y, z), W(z, x).$$
+whose query hypergraph is a triangle.
+
+% \subsection{Basic Concepts}\label{sec:basic-concepts}
+
+% For simplicity we consider only {\em natural join} queries,
+% where all joins are equijoins, and all input relations
+% are joined over common attributes.
+% Such queries are also known as {\em conjunctive queries}
+% and can be written in ``Datalog notation'' as the following
+% example shows.
+
+% \begin{example} \label{ex:triangle} Consider the following SQL query:
+%   \begin{lstlisting}[language=SQL]
+% -- Schema: R(x,y), S(y,z), T(z,x)
+% SELECT R.x, S.y, T.z FROM R, S, T 
+%  WHERE R.y = S.y AND S.z = T.z AND T.x = R.x
+% \end{lstlisting}
+%   %
+%   The corresponding conjunctive query is:
+%   $$Q_{\triangle}(x,y,z) \cd R(x, y), S(y,z), T(z, x).$$
+%   %
+%   where each of $R(x, y)$, $S(y,z)$, and $T(z, x)$
+%   is called a {\em body atom}, and $Q_\triangle(x, y, z)$
+%   the {\em head atom}.
+% \end{example}
+
+% It is often convenient to view a conjunctive query as
+% a hypergraph.  The \emph{query hypergraph} of $Q$ consists of vertices
+% $\mathcal{V}$ and edges $\mathcal{E}$, where the set of nodes
+% $\mathcal{V}$ is the set of variables occurring in $Q$, and the set of
+% hyperedges $\mathcal{E}$ is the set of body atoms in $Q$.
+% The hypergraph for $Q_\triangle$ is a triangle with three
+% vertices $x, y$, and $z$ and three edges corresponding to
+% $R(x, y)$, $S(y,z)$, and $T(z, x)$.
+% For this reason we will refer to $Q_\triangle$ as the {\em triangle
+%     query}.
+% As standard, we
+% say that the query $Q$ is {\em acyclic} if its associated hypergraph
+% is $\alpha$-acyclic\footnote{The reader does not need to be familiar
+%   with definitions of acyclic queries to understand \FJ.}~\cite{DBLP:journals/jacm/Fagin83}.
 
 
 \subsection{Binary Join}\label{sec:binary-join}
+
+\begin{figure*}
+  \begin{subfigure}[t]{0.21\linewidth}
+    \begin{lstlisting}[showlines=true]
+for (x,a) in R:
+  s = S[x]?
+  for (x,b) in s:
+    t = T[x]?
+    for (x,c) in t:
+      output(x,a,b,c)
+
+
+
+
+\end{lstlisting}
+    \caption{Binary \FJ.}
+    \label{fig:bj-loop}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.27\linewidth}
+    \centering
+    \begin{lstlisting}[showlines=true]
+for i in 0..R.len():
+  x = R.x[i]; a = R.a[i]
+  s = S[x]? # s:x->[j]
+  for j in s:
+    x = S.x[j]; b = S.b[j]
+    t = T[x]? # t:x->[k]
+    for k in t:
+      x = T.x[k]; c = T.c[k]
+      output(x,a,b,c)
+
+\end{lstlisting}
+    \caption{Columnar storage.}
+    \label{fig:column-loop}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.25\linewidth}
+    \centering
+    \begin{lstlisting}[escapeinside={(*}{*)}]
+for i in 0..R.len():
+  x = R.x[i]; s = S[x]?
+  for j in s:
+   (* \underline{x = S.x[j];} *)t = T[x]?
+    for k in t:
+     (* \underline{x = T.x[k]} *)
+      a = R.a[i]
+      b = S.b[j]
+      c = T.c[k]
+      output(x,a,b,c)
+\end{lstlisting}
+    \caption{Late materialization.}
+    \label{fig:late-materialization}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.25\linewidth}
+    \centering
+    \begin{lstlisting}[
+    showlines=true
+]
+for i in 0..R.len():
+  x = R.x[i]; 
+  s = S[x]?; t = T[x]?
+  for j in s:
+    for k in t:
+      a = R.a[i]
+      b = S.b[j]
+      c = T.c[k]
+      output(x,a,b,c)
+
+\end{lstlisting}
+    \caption{Late iteration.}
+    \label{fig:factorized-loop}
+  \end{subfigure}
+  \caption{Execution of binary join for the clover query~\ref{fig:bj-loop},
+    and three transformations.
+    The first transformation~\ref{fig:column-loop} makes the algorithm work
+    on column-wise storage instead of a row-wise one;
+    the second transformation~\ref{fig:late-materialization} performs
+    the classic late materialization optimization;
+    the last one is another transformation that we call
+    late iteration~\ref{fig:factorized-loop}.
+  }
+\end{figure*}
 
 The standard approach to computing a natural join of multiple relations is
 to compute one binary join at a time.  A {\em binary plan} is a binary
@@ -83,66 +222,96 @@ left-most base table $R_1$; each tuple is probed in $R_2$; each of the
 matching tuple is further probed in $R_3$, etc.
 
 
-\begin{figure}
-  \begin{subfigure}[b]{0.4\linewidth}
-    \begin{lstlisting}
-for (x, y) in R:
-  s = S[y]?
-  for (y, z) in s:
-    t = T[x,z]?
-    for (x, z) in t:
-      output(x, y, z)
-\end{lstlisting}
-    \caption{Binary join.}
-    \label{fig:background:binary-join}
-  \end{subfigure}
-  % \hspace{.5cm}
-  \begin{subfigure}[b]{0.45\linewidth}
-    \centering
-    \begin{lstlisting}[numbers=none]
-for a in R.x $\cap$ T.x:
-  r = R[a]; t = T[a]
-  for b in r.y $\cap$ S.y:
-    s = S[b]
-    for c in s.z $\cap$ t.z:
-      output(a, b, c)
-\end{lstlisting}
-    \caption{\GJ.}
-    \label{fig:background:gj}
-  \end{subfigure}
-  %  \Description[TODO]{TODO}
-  \caption{Execution of binary join and \GJ for $Q_\triangle$.  The
-    notation \lstinline|S[y]?| performs a lookup on $S$ with the key
-    $y$, and continues to the enclosing loop if the lookup fails.
-    Binary join iterates over {\em tuples}, \GJ iterates over {\em
-        values}.}
-\end{figure}
-
 \begin{example}
-  A possible left-deep linear plan for $Q_\triangle$ is $[R, S, T]$,
-  which represents $(R(x,y) \Join S(y,z)) \Join T(z,x)$.  To execute
-  this plan, we first build a hash table for $S$ keyed on $y$, where
-  each $y$ maps to a vector of $(y,z)$ tuples,
-  % \yell{Remy: this is not
-  %   correct.  The hash table contains tuples.  Think of a table that
-  %   has 30 attributes $S(x_1,\ldots, x_{30})$.  If you join on
-  %   $x_{12}$, you don't create a new tuple with 29 attributes, but
-  %   store the whole tuple in the hash table.  Some systems actually
-  %   store a pointer to the real tuple in the buffer pool.}
-  and a hash table for $T$ keyed on $x$ and $z$, each mapped to a
-  vector of $(x,z)$ tuples\footnote{When the relations are bags, then
+  A possible left-deep linear plan for $Q_\clubsuit$ is $[R, S, T]$,
+  which represents $\left(R(x,a) \Join S(x,b)\right) \Join T(x,c)$.  To execute
+  this plan, we first build a hash table for $S$ keyed on $x$,
+  where each $x$ maps to a vector of $(x,y)$ tuples,
+  and a hash table for $T$ keyed on $x$, each mapped to a
+  vector of $(x,c)$ tuples\footnote{When the relations are bags, then
     the hash table may contain duplicate tuples, or store separately
     the multiplicity.  We also note that the question what exactly to
     store in the hash table (e.g. copies of the tuples, or pointers to
     the tuple in the buffer pool) has been studied for a long time,
-    see~\cite{DBLP:journals/csur/Graefe93}.}.  Then the execution
-  proceeds as shown in Figure~\ref{fig:background:binary-join}.  For each
-  tuple $(x, y)$ in $R$, we first probe into the hash table for $S$
-  using $y$ to get a vector of $(y, z)$ tuples.  We then loop over
-  each $(y, z)$ and probe into the hash table for $T$ using $x$ and
-  $z$.  Each successful probe will return a vector of $(x, z)$ tuples,
-  and we output the tuple $(x, y, z)$ for each $(x, z)$.
+    see~\cite{DBLP:journals/csur/Graefe93}.}.
+  Then the execution
+  proceeds as shown in Figure~\ref{fig:bj-loop}.
+  For each tuple $(x, a)$ in $R$, we first probe into the hash table for $S$
+  using $x$ to get a vector of $(x, b)$ tuples.  We then loop over
+  each $(x, y)$ and probe into the hash table for $T$ with $x$.
+  Each successful probe will return a vector of $(x, c)$ tuples,
+  and we output the tuple $(x, a, b, c)$ for each $(x, c)$.
 \end{example}
+
+\subsection{Columnar Storage and Late Materialization}\label{sec:late-materialization}
+The first transformation we perform on the binary join algorithm
+makes it work on column-wise storage instead of a row-wise one.
+This is not yet an optimization because it likely will not improve the
+performance, but this step serves as an important bridge to the next
+optimizations.
+As Figure~\ref{fig:column-loop} shows, in the outermost loop we
+iterate over row indices instead of tuples.
+For each row index $i$, we retrieve the $x$-value $R.x[i]$,
+as well as the corresponding $a$-value $R.a[i]$.
+The hash maps for $S$ and $T$ now map each $x$ to a vector of row indices,
+so we next look up into the hash map for $S$ using $x$
+to get a vector of $j$.
+In the second loop, we retrieve the $x$-value and $b$-value
+from $S$ for each $j$,
+then probe into $T$ to get a vector of $k$.
+Finally, we retrieve the $x$-value and $c$-value from $T$ for each $k$,
+and output the tuple $(x, a, b, c)$.
+
+A key inefficiency of the algorithm in Figure~\ref{fig:column-loop} is that,
+although the query only outputs a single tuple $(x_0, a_0, b_0, c_0)$,
+we still did a lot of work retrieving the different, $a$, $b$, and $c$ values
+from their respective columns.
+For example, since we iterate over the entire $R$ relation,
+we retrieve all $2n+1$ $a$-values from $R.a$;
+even worse, since $|R \bowtie S| = n^2 + 1$,
+we will access $S.b[j]$ $O(n^2)$ times.
+A better strategy is to {\em delay} the retrieval of these values
+until we actually need them.
+In this case, we can delay the retrieval of $a$, $b$, and $c$
+until we are ready to output the tuple $(x, a, b, c)$.
+This way we only need to access each of $R.a$, $S.b$, and $T.c$ once,
+instead of $O(n^2)$ times.
+This is precisely the classic {\em late materialization}
+optimization~\cite{DBLP:conf/icde/AbadiMDM07} now implemented in
+nearly all modern database systems.
+
+\subsection{Late Iteration and Free Join}\label{sec:late-materialization}
+We can go one step beyond late materialization and further optimize
+the code in Figure~\ref{fig:late-materialization}.
+The key observation is that, although we retrieve $x$ from the
+different relations in each loop level,
+{\em they have to be the same value} because $x$ is the join attribute!
+This means we can first the last two redundant retrievals of $x$
+and reuse the value from the outermost loop,
+which corresponds to removing the underlined code
+in Figure~\ref{fig:late-materialization}.
+At this point, we can see that the remaining body of the second loop,
+\lstinline|t = T[x]?|,
+does not depend on the loop variable $j$ at all.
+We can therefore pull the lookup out of the loop,
+resulting in the code in Figure~\ref{fig:factorized-loop}.
+In other words, we {\em delay} the iteration over $s$
+until after the lookup on $T$ succeeds.
+
+Note that this final optimization has improved the asymptotic
+run time of the algorithm:
+although late materialization already reduces a quadratic
+number of access to the relation columns,
+it still needs to iterate over $O(n^2)$ row indices,
+because the first two loop levels essentially compute
+the join $R \bowtie S$;
+in contrast, the first loop level in Figure~\ref{fig:factorized-loop}
+joins every tuple of $R$ with $S$ and $T$ at the same time,
+and the entire algorithm now runs in $O(n)$ time.
+
+\subsection{Other Optimizations}
+Lazy trie building, dynamic replanning, Generic Join
+Vectorization, query planning.
 
 \subsection{\GJ}\label{sec:background:gj}
 

@@ -126,7 +126,7 @@ for (x,a) in R:
   \end{subfigure}
   \begin{subfigure}[t]{0.27\linewidth}
     \centering
-    \begin{lstlisting}[showlines=true]
+    \begin{lstlisting}[showlines=true, numbers=none]
 for i in 0..R.len():
   x = R.x[i]; a = R.a[i]
   s = S[x]? # s:x->[j]
@@ -161,7 +161,8 @@ for i in 0..R.len():
   \begin{subfigure}[t]{0.25\linewidth}
     \centering
     \begin{lstlisting}[
-    showlines=true
+    showlines=true,
+    numbers=none
 ]
 for i in 0..R.len():
   x = R.x[i]; 
@@ -309,7 +310,152 @@ in contrast, the first loop level in Figure~\ref{fig:factorized-loop}
 joins every tuple of $R$ with $S$ and $T$ at the same time,
 and the entire algorithm now runs in $O(n)$ time.
 
-\subsection{Other Optimizations}
+At the moment, our optimizations may appear rather low-level and ad-hoc.
+Taking a step back, we can understand the execution of
+any join algorithm as a series of iterations and lookups.
+The transformation from row-wise to column-wise storage
+involves changing {\em what to iterate over} (row indices instead of tuples);
+the late materialization optimization changes {\em what to look up}
+and {\em when to look up} (look up row indices first, then retrieve values later);
+finally, the late iteration optimization reorders the iterations and lookups.
+
+While columnar storage and late materialization have become stables of
+modern database systems,
+the contribution of the \FJ framework is a new abstraction
+to describe the ordering of iterations and lookups
+that we call the \FJ plan.
+The basic building blocks of a \FJ plan are
+called {\em subatoms}, each of which is a subset of a relation schema.
+%
+\begin{definition}
+  Given a relation schema $R(x_1, x_2, \ldots)$,
+  a \emph{subatom} of $R$ is of the form $R(v_1, v_2, \ldots)$
+  where $\set{v_1, v_2, \ldots} \subseteq \set{x_1, x_2, \ldots}$
+\end{definition}
+%
+For example, given the relation $R$ with schema $R(x, y)$,
+all of the following are valid subatoms: $R(), R(x), R(y), R(x, y)$.
+A \FJ plan over a set of schemas is a sequence of groups,
+where each group is a list of subatoms.
+%
+\begin{definition}
+  Given a join query $Q$ over $R_1, R_2, \ldots$,
+  a \FJ plan for $Q$ is of the form $[R_i(\mathbf{x}_i), R_j(\mathbf{x_j}), \ldots],
+    [R_k(\mathbf{x_k}), \ldots], \ldots$ where each of
+  $R_i(\mathbf{x_i}), R_j(\mathbf{x_j}), R_k(\mathbf{x_k}), \ldots$
+  is a subatom over the schema of $R_i, R_j, R_k, \ldots$ respectively.
+\end{definition}
+%
+Each group in a \FJ plan corresponds to a loop level.
+At each loop level,
+we iterate over tuples of the first subatom in the group,
+and use the values to look up into the remaining subatoms.
+For this reason, we will sometimes stylize a \FJ plan as follows
+to emphasize the iterated subatom and reflect the loop nesting:
+\begin{alignat*}{4}
+   & [R_1        &  & (\mathbf{x_1})\mid R_2(\mathbf{x_2}), R_3(\mathbf{x_3}), \ldots] \\
+   & \rightarrow &  & [R_4(\mathbf{x_4})\mid R_5(\mathbf{x_2}), \ldots]                \\
+   &             &  & \rightarrow [R_6(\mathbf{x_6})\mid \ldots]
+\end{alignat*}
+%
+\begin{example}
+  The \FJ plan for the algorithm in Figure~\ref{fig:factorized-loop}
+  is:
+  \begin{alignat*}{4}
+     & [R(         &  & x, a) \mid S(x), T(x)]   \\
+     & \rightarrow &  & [S(b) \mid ]             \\
+     &             &  & \rightarrow [T(c) \mid ]
+  \end{alignat*}
+  Although we only retrieve the value of $a$ in the innermost loop,
+  eacho $a$-value one-to-one corresponds to each $i$,
+  so the plan iterates over both $x$ and $a$ at the first level.
+\end{example}
+%
+\begin{example}
+  We can represent the binary join algorithm in Figure~\ref{fig:bj-loop}.
+  with the \FJ plan:
+  \begin{alignat*}{4}
+     & [R(         &  & x, a) \mid S(x)]        \\
+     & \rightarrow &  & [S(b) \mid T(x)]        \\
+     &             &  & \rightarrow [T(c) \mid]
+  \end{alignat*}
+  if we ignore the redundant $x$ at the inner loop levels.
+\end{example}
+%
+In face, every left-linear binary join plan $[R_1, R_2, R_3, \ldots]$
+can be represented by a \FJ plan:
+\begin{alignat*}{4}
+   & [R_1(       &  & \mathbf{x_1}) \mid &  & R_2(\mathbf{\mathbf{x_1} \cap \mathbf{x_2}})]                                      \\
+   & \rightarrow &  & [R_2(              &  & \mathbf{x_2} \setminus \mathbf{x_1}) \mid R_3(\mathbf{x_2}\cap \mathbf{x_3})]      \\
+   &             &  & \rightarrow        &  & [R_3(\mathbf{x_3} \setminus \mathbf{x_2}) \mid R_4(\mathbf{x_3}\cap \mathbf{x_4})] \\
+   &             &  &                    &  & \vdots
+\end{alignat*}
+%
+As we will see in Section~\ref{sec:other-optimizations},
+we can also represent any \GJ algorithm with a \FJ plan.
+\FJ therefore generalizes and unifies both binary join and \GJ.
+However, the true power of \GJ is its ability to represent
+algorithms like the one in Figure~\ref{fig:factorized-loop}
+that are neither binary join nor \GJ,
+leading to performance improvements beyond the existing algorithms.
+
+\begin{figure*}
+  \begin{subfigure}[t]{0.23\linewidth}
+    \begin{lstlisting}
+# [ R(x, y) | S(y) ]
+# -> [ S(z) | T(z, x) ]
+
+for (x,y) in R:
+  s = S[y]? # S:y->[z]
+  for z in s:
+    if (z,x) in T:
+      output(x,y,z)
+\end{lstlisting}
+    \caption{Plan equivalent to binary join.}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.25\linewidth}
+    \begin{lstlisting}[numbers=none, showlines=true]
+# [ R(x, y) | S(y), T(x) ]
+# -> [ S(z) | T(z) ]
+
+for (x,y) in R:
+  s = S[y]?; t = T[x]?
+  for z in s:
+    if z in t:
+      output(x,y,z)
+\end{lstlisting}
+    \caption{A more efficient plan.}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.25\linewidth}
+    \begin{lstlisting}[showlines=true]
+# [ R(x, y) | S(y), T(x) ]
+# -> [ S(z) $\cap$ T(z) ]
+
+for (x,y) in R:
+  s = S[y]?; t = T[x]?
+  for z in s $\cap$ t:
+    output(x,y,z)
+
+\end{lstlisting}
+    \caption{Plan with intersect ($\cap$).}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.25\linewidth}
+    \begin{lstlisting}[showlines=true, numbers=none]
+# [ R(y) $\cap$ S(y) ]
+# -> [ S(z) $\cap$ T(z) ]
+#    -> [ T(x) $\cap$ R(x) ]
+for y in R.y $\cap$ S.y:
+  for z in S[y] $\cap$ T.z:
+    for x in T[z] $\cap$ R[y]:
+      output(x,y,z)
+
+\end{lstlisting}
+    \caption{Plan equivalent to \GJ.}
+  \end{subfigure}
+  \caption{Four different \FJ plans for $Q_\triangle$ and their execution.}
+\end{figure*}
+
+\subsection{Other Optimizations}\label{sec:other-optimizations}
 Lazy trie building, dynamic replanning, Generic Join
 Vectorization, query planning.
 

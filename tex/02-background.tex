@@ -22,6 +22,14 @@ SELECT * FROM R, S, T WHERE R.x = S.x AND S.x = T.x
   \label{fig:clover-query}
 \end{figure}
 
+\begin{figure}
+  \includegraphics*[width=.6\linewidth]{clover-2.pdf}
+  \caption{Visualization of the input relations to $Q_\clubsuit$.
+    Each binary relation is represented as a set of edges on each side.
+    The query $Q_\clubsuit$ looks for sets of 3 edges, one from each relation,
+    that meet in the middle (there is only one such set, at the center of the figure).}
+\end{figure}
+
 In this section we introduce the \FJ framework.
 Unlike our SIGMOD paper~\cite{10.1145/3589295} which defines \FJ from
 the basic building blocks,
@@ -635,53 +643,74 @@ SELECT * FROM R,S,T -- R(x,y), S(y,z), T(z,x)
   \label{fig:triangle-query}
 \end{figure}
 
-\subsubsection{Vectorized Execution}\label{sec:vectorized-execution}
-The \FJ algorithm as presented in Figure~\ref{fig:fj-algo}
-suffers from poor temporal locality.
-In the body of the outer loop,
-we probe into the same set of relations for each tuple.
-However, these probes are interrupted by the recursive
-call at the end,
-which is itself a loop interrupted by further recursive calls.
+\begin{figure}
+  \includegraphics[width=.6\linewidth]{triangles-2.pdf}
+  \caption{Visualization of input relations to $Q_\triangle$.
+    Each relation is represented by a set of edges.
+    The query $Q_\triangle$ looks for triangles formed by
+    one edge from each relation (there are 10).}
+\end{figure}
 
 \begin{figure}
   \begin{lstlisting}
-@outer for ts in tries[0].iter_batch(batch_size):
-  tup_subtries = [(tuple + t, [ tries[0].get(t) ]) | t $\in$ ts]
-  for trie in tries[1..]:
-    for (tup, subtries) in tup_subtries:
-      subtrie = trie.lookup(tup[trie.vars])
-      if subtrie is None:
-        tup_subtries.remove((tup, subtries))
-      else: subtries.append(subtrie)
-  for (tup, subtries) in tup_subtries:
-    new_tries = all_tries[tries $\mapsto$ subtries]
-    join(new_tries, plan[1:], tup)
+def join(plan, tuple, R, S, T, ...):
+  if plan is empty: output(tuple)
+  else:
+    let [ R(xs) | S(ys), T(zs), ... ] = plan[0]
+    for xs in R:
+      r = R[xs]?; s = S[ys]?; t = T[zs]?; ...
+      join(plan[1:], tuple ++ xs, r, s, t, ...)
+\end{lstlisting}
+  \caption{Recursive formulation of \FJ.}
+  \label{fig:fj-recursive}
+\end{figure}
+
+
+\begin{figure}
+  \begin{lstlisting}
+def join(plan, tuple, R, S, T, ...):
+  if plan is empty: output(tuple)
+  else:
+    let [ R(xs) | S(ys), T(zs), ... ] = plan[0]
+    tup_rels = {} # map a partial tuple to sub-relations
+    for xs_batch in R.iter_batch():
+      for xs in xs_batch:
+        r = R[xs]?; s = S[ys]?; t = T[zs]?; ...
+        tup = tuple ++ xs
+        tup_rels[tuple] = (r, s, t, ...)
+    for (tup, rels) in tup_rels:
+      join(plan[1:], tup, rels)
 \end{lstlisting}
   \caption{Vectorized execution for \FJ.}
   \label{fig:vectorized-execution}
 \end{figure}
 
+\subsubsection{Vectorized Execution}\label{sec:vectorized-execution}
+A simple way to implement \FJ is to use a recursive function,
+as shown in Figure~\ref{fig:fj-recursive}.
+For every group in the \FJ plan,
+we iterate over the first subatom and probe into the remaining subatoms.
+If all probes are successful, we append new values to the partial tuple,
+and recursively call \lstinline|join| on the remaining plan and sub-relations.
+This na\"ive implementation suffers from poor temporal locality:
+in the body of the loop,
+we probe into the same set of relations for each tuple.
+But these probes are interrupted by the recursive
+call at the end,
+which is itself a loop interrupted by further recursive calls.
+
 A simple way to improve locality is to perform a batch of probes
 before recursing, just like the classic vectorized execution
 for binary join.
-Concretely, we replace the \lstinline|iter| method
-with a new method \lstinline|iter_batch(batch_size)|
-which returns up to \lstinline|batch_size| tuples at a time.
-If there are less than \lstinline|batch_size| tuples left,
-it returns all the remaining tuples.
-Then we replace the outer loop in Figure~\ref{fig:fj-algo}
-with the one in Figure~\ref{fig:vectorized-execution}.
-For each batch of tuples,
-we create a vector pairing each tuple to its subtrie in
-\lstinline|tries[0]|.
-Then for each trie to be probed,
-we iterate over the vector and look up each tuple
-from the trie.
-If the lookup succeeds, we append the subtrie to the vector of tries paired with the tuple.
-If it fails, we remove the tuple to avoid probing it again.
-Finally, with each tuple and the subtries it pairs with,
-we recursively call \lstinline|join|.
+As shown in Figure~\ref{fig:vectorized-execution},
+we call \lstinline|iter_batch| to retrieve a batch of tuples from $R$.
+For each tuple in a batch,
+we probe into the relations to get the corresponding sub-relations.
+If all probes are successful, we append new values to the partial tuple,
+and pair the tuple with the respecitve sub-relations;
+otherwise we continue onto the next tuple in the batch.
+Finally, for each tuple that successfully probes into all relations,
+we call \lstinline|join| recursively on the remaining plan.
 
 % \subsection{\GJ}\label{sec:background:gj}
 

@@ -1,1 +1,18 @@
 \section{Conclusion}\label{sec:conclusion}
+In this paper we review the \FJ framework,
+which generalizes and unifies traditional join algorithms and \WCOJ algorithms.
+We re-derive the more general \FJ from the well-understood binary join,
+hoping to make the framework more accessible to database practitioners.
+We hope to see the adoption of \FJ in mainstream databases,
+which shall inspire further research on the design of join algorithms.
+We conclude by pointing out some promising research directions.
+First, we have been focusing on single-threaded in-memory algorithms.
+How can we adapt \FJ to work on disk, on multi-core machines, and in distributed settings?
+In particular, the COLT data structure relies on laziness and appears inherently sequential.
+Do we need a new data structure to parallelize \FJ?
+Second, our optimizer starts from an already optimized binary plan, and conservatively
+improve it into a \FJ plan.
+How can we design and implement an optimizer to better exploit the flexibilty of \FJ?
+Finally, as the experiments show, our current implementation of \FJ is not yet competitive
+for certain bushy plans.
+How can we improve the performance of materializing intermediate results for \FJ?

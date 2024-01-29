@@ -56,28 +56,20 @@ vectorization.  We chose as variable order for \GJ the same as for
 %%% We are not aware of any other algorithm converting a binary plan into a \GJ plan, 
 %%%   so we use the same plan for both \FJ and \GJ to ensure a fair comparison.
 
-Both  the JOB and the LSQB benchmarks  focus on joins.
-JOB contains 113 acyclic queries with an average of 8 joins per query,
-whereas LSQB contains both cyclic and acyclic queries.
+The JOB benchmark contains 113 acyclic join queries with an average of 8 joins per query.
 Each query in the benchmarks only contains base-table filters,
 natural joins, and a simple group-by at the end,
 and no null values.
-JOB works over real-world data from the IMDB dataset,
-and LSQB uses synthetic data.
-We exclude 5 queries from JOB that return empty results,
+The queries works over real-world data from the IMDB dataset.
+We exclude 5 queries that return empty results,
 since such empty queries are known to introduce reproducibility issues\footnote{
   See GitHub issue: https://github.com/gregrahn/join-order-benchmark/issues/11
 }.
-We use the first 5 queries from LSQB; the other 4 queries require
-anti-joins or outer joins which we do not support.
 
 We ran all our experiments on a MacBook Air laptop with Apple M1 chip and 16GB memory.
 All systems are configured to run single-threaded in main memory,
 and we leave all of DuckDB's configurations to be the default.
 All systems are given the same binary plan optimzed by DuckDB.
-To answer our third research question,
-we needed to hijack DuckDB's optimizer to produce a poor plan.
-We did this by modifying its cardinality estimator to always return 1.
 Since we are only interested in the performance of the join algorithm,
 we exclude the time spent in selection and aggregation
 when reporting performance.
@@ -127,6 +119,11 @@ JOIN
 movie_info(mid, iid2) 
 \end{lstlisting}
   \end{tabular}
+  \caption{Query plan produced by DuckDB for JOB Q13a.
+    We show the join attributes next to each input relation,
+    and label each relation with its size as well as
+    each join with its (actual) cardinality.  }
+  \label{fig:eval:imdb:plan}
 \end{figure}
 
 
@@ -167,12 +164,6 @@ movie_info(mid, iid2)
 
 
 \subsection{Run time comparison}\label{sec:run-time-comparison}
-Our first set of experiments compare the performance of \FJ, \GJ, and binary join
-on the JOB and LSQB benchmarks.
-For each query in the benchmarks, we invoke DuckDB to obtain an optimized binary plan,
-and provide the plan to our \FJ and \GJ implementation.
-We run LSQB with the scaling factors 0.1, 0.3, 1, and 3,
-as some queries run out of memory with larger scaling factors.
 
 Figure~\ref{fig:eval:imdb} compares the run time of \FJ and \GJ against binary join on JOB queries.
 We see that almost all data points for \FJ are below the diagonal,
@@ -189,22 +180,24 @@ We zoom in onto a few interesting queries for a deeper look.
 The slowest query under DuckDB is Q13a, taking over 10 seconds to finish.
 \GJ runs slightly faster, taking 7 seconds,
 whereas \FJ takes just over 1 second.
-The query plan for this query reveals the bottleneck for binary join:
+The query plan for this query,
+as shown in Figure~\ref{fig:eval:imdb:plan},
+reveals the bottleneck for binary join:
 the first 3 binary joins are over 4 very large tables,
 and two of the joins are many-to-many joins, exploding the
 intermediate result to contain over 100 million tuples.
-However, all 3 joins are on the same attribute;
+However, all 3 joins are on the same attribute (\lstinline|mid|);
 in other words they are quite  similar to our clover query $Q_\clubsuit$.
 As a result, \GJ and \FJ simply intersects the relations
 on that join attribute,
 expanding the remaining attributes only after
 other more selective joins.
-This data point appears to confirm a folklore that claims
-\WCOJ algorithms are more resistant to poor query plans.
-After all, binary join could have been faster, had the query plan
-ordered the more selective joins first.
-We expand on this point with more experiments evaluating
-each algorithm's robustness against poor plans in Section~\ref{sec:robustness}.
+% This data point appears to confirm a folklore that claims
+% \WCOJ algorithms are more resistant to poor query plans.
+% After all, binary join could have been faster, had the query plan
+% ordered the more selective joins first.
+% We expand on this point with more experiments evaluating
+% each algorithm's robustness against poor plans in Section~\ref{sec:robustness}.
 
 On a few queries \FJ runs slightly slower than binary join,
 as shown by the data points over the diagonal.
@@ -217,7 +210,6 @@ all base-table attributes in a simple vector.
 Future work may explore more efficient materialization strategies,
 for example only materializing attributes that
 are needed by future joins.
-
 
 % Figure~\ref{fig:eval:lsqb} compares the performance of \FJ and \GJ against binary join on LSQB queries.
 % Each line corresponds to one query running on scaling factors 0.1, 0.3, 1, and 3.

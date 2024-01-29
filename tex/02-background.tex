@@ -28,6 +28,7 @@ SELECT * FROM R, S, T WHERE R.x = S.x AND S.x = T.x
     Each binary relation is represented as a set of edges on each side.
     The query $Q_\clubsuit$ looks for sets of 3 edges, one from each relation,
     that meet in the middle (there is only one such set, at the center of the figure).}
+  \label{fig:clover-Visualization}
 \end{figure}
 
 In this section we introduce the \FJ framework.
@@ -284,6 +285,9 @@ matching tuple is further probed in $R_3$, etc.
   each $(x, y)$ and probe into the hash table for $T$ with $x$.
   Each successful probe will return a vector of $(x, c)$ tuples,
   and we output the tuple $(x, a, b, c)$ for each $(x, c)$.
+  On the input instance in Figure~\ref{fig:clover-query}
+  (visualized in Figure~\ref{fig:clover-Visualization}),
+  this algorithm runs in time $\Omega(n^2)$.
 \end{example}
 
 \subsection{Columnar Storage and Late Materialization}\label{sec:late-materialization}
@@ -526,7 +530,8 @@ In this section, we summarize a few additional optimizations
 introduced in our SIGMOD paper~\cite{10.1145/3589295},
 as well as relate \FJ to the \GJ algorithm.
 To motivate these optimizations, we will follow the new example query
-$Q_\triangle$ in Figure~\ref{fig:triangle-query}.
+$Q_\triangle$ in Figure~\ref{fig:triangle-query},
+and visualize an input instance in Figure~\ref{fig:triangle-input}.
 Note $Q_\triangle$ is now a {\em cyclic} query, because its hypergraph
 is a triangle with three vertices $x$, $y$, and $z$ and three edges
 corresponding to $R(x, y)$, $S(y,z)$, and $T(z, x)$.
@@ -649,6 +654,7 @@ SELECT * FROM R,S,T -- R(x,y), S(y,z), T(z,x)
     Each relation is represented by a set of edges.
     The query $Q_\triangle$ looks for triangles formed by
     one edge from each relation (there are 10).}
+  \label{fig:triangle-input}
 \end{figure}
 
 \begin{figure}

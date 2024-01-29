@@ -94,6 +94,45 @@ This excluded time takes up on average less than 1\% of the total execution time
   \label{fig:eval:imdb}
 \end{figure}%
 
+\begin{figure}
+  \centering
+  \begin{tabular}{c}
+    \begin{lstlisting}[numbers=none]
+111101
+JOIN
+ |  \________9775
+1919495      company_name(cid)
+JOIN
+ |  \________1
+8123586      company_type(ctid)
+JOIN
+ |  \________1
+24740873     info_type1(iid1)
+JOIN
+ |  \________1
+148621556    info_type2(iid2)
+JOIN
+ |  \________1
+177388547    kind_type(kid)
+JOIN
+ |  \________2609129
+20885030     movie_companies(mid, cid, ctid)
+JOIN
+ |  \________1380035
+ |           JOIN
+ |            |  \_____1380035
+ |           2528312   movie_info_idx(mid, iid1)
+ |           title(mid, kid)
+14835720    
+movie_info(mid, iid2) 
+\end{lstlisting}
+  \end{tabular}
+\end{figure}
+
+
+% \end{lstlisting}
+% \end{figure*}
+
 % \begin{figure*}
 %   \centering
 %   \begin{minipage}[t]{.45\textwidth}
